@@ -13,8 +13,6 @@ sudo yum install -y mariadb105-server
 # Запуск MariaDB и включение автозапуска при загрузке
 sudo systemctl start mariadb
 sudo systemctl enable mariadb
-sudo bash -c 'echo "[mysqld]" >> /etc/my.cnf'
-sudo bash -c 'echo "bind-address = 0.0.0.0" >> /etc/my.cnf'
 sudo systemctl restart mysql
 
 

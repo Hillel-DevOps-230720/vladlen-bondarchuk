@@ -1,0 +1,27 @@
+---
+- name: Provision and configure the server
+  hosts: your_target_hosts
+  become: yes
+  tasks:
+    - name: Update packages
+      yum:
+        name: '*'
+        state: latest
+
+    - name: Install required packages
+      yum:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - git
+        - nginx
+        - awscli
+        - python3-pip
+
+    - name: Install AWS CLI using pip
+      pip:
+        name: awscli
+        executable: pip3
+
+    - name: Run MariaDB installation tasks
+      include_tasks: install_mysql.yml

@@ -5,7 +5,7 @@
 "region": "{{user `region` }}",
 "source_ami": "{{user `base_ami` }}",
 "instance_type": "{{user `instance_size` }}",
-"ami_name": "my-db",
+"ami_name": "my-db1",
 "ssh_username": "ec2-user",
 "ssh_timeout": "20m",
 "tags": {
@@ -18,22 +18,12 @@
 }
 ],
 
- "provisioners": [
+"provisioners": [
       {
-        "type": "shell",
-        "inline": [
-          "sudo yum update",
-          "sudo yum install -y git nginx awscli",
-          "sudo yum install -y python3-pip",
-          "pip3 install awscli"
-        ]
-      },
-      {
-      "type": "shell",
-      "script": "install_mysql.sh",
-      "execute_command": "sudo {{.Path}}"
+        "type": "ansible",
+        "playbook_file": "/home/vladlen/vladlen-bondarchuk/ansible/db_install.yml"
       }
-    ]
+    ] 
 
 
 

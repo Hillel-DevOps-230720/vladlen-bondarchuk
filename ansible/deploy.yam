@@ -1,0 +1,57 @@
+- name: Configure app directory
+ hosts: web
+ gather_facts: yes
+ become: yes
+ tasks:
+    - name: Ensure app directory exists
+      ansible.builtin.file:
+        path: "{{ APP_DIR }}"
+        state: directory
+        owner: ec2-user
+        group: ec2-user
+    - name: Clone Flask-ALB-App repository
+      git:
+        repo: https://github.com/saaverdo/flask-alb-app
+        dest: /opt/flask-alb-app
+        version: alb
+
+    - name: Change directory to Flask-ALB-App
+      ansible.builtin.command: cd /opt/flask-alb-app
+
+    - name: Install required Python packages for Flask-ALB-App
+      ansible.builtin.command: pip3 install -r requirements.txt
+
+- name: Install and configure sample web application
+ hosts: all
+ gather_facts: yes
+ become: yes
+ tasks:
+    - name: Install pip and necessary packages
+      ansible.builtin.package:
+        name:
+          - python3-pip
+          - gunicorn
+        state: present
+
+    - name: Install mysql connector
+      ansible.builtin.pip:
+        name: mysql-connector-python
+        executable: pip3
+
+    - name: Move sample web application service to systemd directory
+      ansible.builtin.copy:
+        src: /tmp/myapp.service
+        dest: /etc/systemd/system/myapp.service
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Reload systemd configuration
+      ansible.builtin.systemd:
+        daemon_reload: yes
+
+    - name: Start and enable sample web application service
+      ansible.builtin.systemd:
+        name: myapp
+        state: started
+        enabled: yes

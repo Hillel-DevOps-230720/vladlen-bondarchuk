@@ -18,23 +18,12 @@
 }
 ],
 
- "provisioners": [
+"provisioners": [
       {
-        "type": "shell",
-        "inline": [
-          "sudo yum update",
-          "sudo yum install -y git nginx awscli",
-          "sudo yum install -y python3-pip",
-          "pip3 install awscli",
-	  "sudo dnf -y localinstall https://dev.mysql.com/get/mysql80-community-release-el9-4.noarch.rpm",
-	  "sudo dnf install -y git python3-pip pkg-config mysql-devel python3-devel gcc",
-	  "git clone https://github.com/saaverdo/flask-alb-app -b alb",
-          "cd flask-alb-app",
-          "pip install -r requirements.txt"
-          
-        ]
+        "type": "ansible",
+        "playbook_file": "/home/vladlen/vladlen-bondarchuk/ansible/app_install.yml"
       }
-    ]
+    ] 
 
 
 

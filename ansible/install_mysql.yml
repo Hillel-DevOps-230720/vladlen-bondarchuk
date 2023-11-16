@@ -1,0 +1,82 @@
+    - name: Create MySQL user and database
+      mysql_user:
+        name: "{{ MYSQL_USER }}"
+        password: "{{ MYSQL_PASSWORD }}"
+        host: '%'
+        state: present
+      register: mysql_user_result
+
+    - name: Create MySQL database
+      mysql_db:
+        name: "{{ MYSQL_DB }}"
+        state: present
+      register: mysql_db_result
+
+    - name: Grant privileges on the database to the user
+      mysql_user:
+        name: "{{ MYSQL_USER }}"
+        password: "{{ MYSQL_PASSWORD }}"
+        priv: "{{ MYSQL_DB }}.*:ALL"
+        host: '%'
+        state: present
+
+    - name: Show available databases
+      command: mysql -e "SHOW DATABASES;"
+      register: mysql_show_databases
+
+    - debug:
+        var: mysql_show_databases.stdout_lines
+
+    - name: Install additional packages
+      yum:
+        name: python3-pip
+        state: present
+
+    - name: Clean yum cache and free up disk space (optional)
+      yum:
+        name: '*'
+        state: latest
+        clean_requirements_list: yes
+
+    - name: Set MySQL root password
+      mysql_user:
+        name: root
+        password: "{{ MYSQL_ROOT_PASSWORD }}"
+        host: localhost
+        state: present
+
+    - name: Ensure MySQL is running and enabled
+      service:
+        name: mariadb
+        state: started
+        enabled: yes
+
+    - name: Backup MySQL database
+      shell: "mysqldump -u{{ DB_USER }} -p{{ DB_PASSWORD }} {{ DB_NAME }} > {{ BACKUP_FILE }}"
+      args:
+        executable: /bin/bash
+      register: mysqldump_result
+      environment:
+        DB_USER: "{{ DB_USER }}"
+        DB_PASSWORD: "{{ DB_PASSWORD }}"
+        DB_NAME: "{{ DB_NAME }}"
+        BACKUP_FILE: "{{ BACKUP_FILE }}"
+
+    - name: Compress backup file
+      shell: "tar czvf {{ BACKUP_FILE }}.tar.gz {{ BACKUP_FILE }}"
+      args:
+        executable: /bin/bash
+      when: mysqldump_result.rc == 0
+
+    - name: Copy backup to S3
+      command: "aws s3 cp {{ BACKUP_FILE }}.tar.gz s3://{{ S3_BUCKET }}/"
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+        AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
+      when: mysqldump_result.rc == 0
+
+    - name: Delete old backups on S3
+      command: "aws s3 ls s3://{{ S3_BUCKET }}/ | awk '{{print $4}}' | sort -r | tail -n +{{ NUM_BACKUPS+1 }} | while read file; do aws s3 rm s3://{{ S3_BUCKET }}/$file; done"
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
+        AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"

@@ -1,0 +1,20 @@
+---
+- name: Install packages App
+  hosts: all
+  become: true
+  vars:
+    packages:
+      - git
+      - nginx
+      - awscli
+      - python3-pip
+
+  tasks:
+    - name: Install packages
+      package:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      tags:
+        - from_list
+      loop: "{{ packages }}"
